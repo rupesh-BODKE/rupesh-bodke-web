@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rupesh Bodke | Portfolio</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --clr-bg:       #0f172a;
+      --clr-surface:  #1e293b;
+      --clr-card:     #334155;
+      --clr-accent:   #38bdf8;
+      --clr-accent2:  #818cf8;
+      --clr-text:     #e2e8f0;
+      --clr-muted:    #94a3b8;
+      --clr-white:    #f8fafc;
+      --font-sans:    'Segoe UI', system-ui, -apple-system, sans-serif;
+      --max-w:        960px;
+      --radius:       12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--clr-bg);
+      color: var(--clr-text);
+      line-height: 1.7;
+    }
+
+    a { color: var(--clr-accent); text-decoration: none; transition: color .2s; }
+    a:hover { color: var(--clr-accent2); }
+
+    /* ── Navigation ───────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; width: 100%; z-index: 100;
+      background: rgba(15, 23, 42, .85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(56, 189, 248, .15);
+    }
+
+    nav .nav-inner {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: .9rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    nav .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--clr-accent), var(--clr-accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    nav ul { list-style: none; display: flex; gap: 1.6rem; }
+    nav li a {
+      color: var(--clr-muted);
+      font-size: .9rem;
+      font-weight: 500;
+      transition: color .2s;
+    }
+    nav li a:hover { color: var(--clr-white); }
+
+    .hamburger {
+      display: none; background: none; border: none; cursor: pointer;
+      flex-direction: column; gap: 5px;
+    }
+    .hamburger span {
+      display: block; width: 24px; height: 2px;
+      background: var(--clr-muted); border-radius: 2px; transition: .3s;
+    }
+
+    /* ── Sections ─────────────────────────────────────── */
+    section {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 5rem 1.5rem 3rem;
+    }
+
+    .section-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 2rem;
+      position: relative;
+      display: inline-block;
+    }
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -6px; left: 0;
+      width: 50%; height: 3px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--clr-accent), var(--clr-accent2));
+    }
+
+    /* ── Hero / About ─────────────────────────────────── */
+    #about {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding-top: 6rem;
+    }
+
+    .avatar {
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid var(--clr-accent);
+      margin-bottom: 1.5rem;
+      background: var(--clr-surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; color: var(--clr-muted);
+      overflow: hidden;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    #about h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--clr-white), var(--clr-accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    #about .tagline {
+      font-size: 1.2rem;
+      color: var(--clr-muted);
+      margin: .5rem 0 1.5rem;
+    }
+
+    #about .bio {
+      max-width: 620px;
+      color: var(--clr-muted);
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+
+    .social-links {
+      display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;
+      justify-content: center;
+    }
+    .social-links a {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .55rem 1.2rem;
+      border: 1px solid var(--clr-card);
+      border-radius: 999px;
+      font-size: .85rem;
+      color: var(--clr-muted);
+      transition: .25s;
+    }
+    .social-links a:hover {
+      border-color: var(--clr-accent);
+      color: var(--clr-accent);
+      background: rgba(56, 189, 248, .08);
+    }
+
+    /* ── Skills ────────────────────────────────────────── */
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .skill-category {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-card);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      transition: transform .25s, border-color .25s;
+    }
+    .skill-category:hover {
+      transform: translateY(-4px);
+      border-color: var(--clr-accent);
+    }
+
+    .skill-category h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: .75rem;
+      color: var(--clr-accent);
+    }
+
+    .tags { display: flex; flex-wrap: wrap; gap: .5rem; }
+    .tag {
+      padding: .3rem .75rem;
+      background: rgba(56, 189, 248, .1);
+      border-radius: 999px;
+      font-size: .8rem;
+      color: var(--clr-text);
+      border: 1px solid rgba(56, 189, 248, .15);
+    }
+
+    /* ── Experience ────────────────────────────────────── */
+    .timeline { position: relative; padding-left: 2rem; }
+    .timeline::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, var(--clr-accent), var(--clr-accent2), transparent);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2.5rem;
+      padding: 1.5rem;
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-card);
+      border-radius: var(--radius);
+      transition: border-color .25s;
+    }
+    .timeline-item:hover { border-color: var(--clr-accent); }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -2.35rem; top: 1.8rem;
+      width: 12px; height: 12px;
+      background: var(--clr-accent);
+      border-radius: 50%;
+      border: 3px solid var(--clr-bg);
+    }
+
+    .timeline-item h3 { font-size: 1.1rem; color: var(--clr-white); }
+    .timeline-item .meta {
+      font-size: .85rem;
+      color: var(--clr-accent);
+      margin: .25rem 0 .75rem;
+    }
+    .timeline-item ul {
+      padding-left: 1.2rem;
+      color: var(--clr-muted);
+      font-size: .92rem;
+    }
+    .timeline-item li { margin-bottom: .35rem; }
+
+    /* ── Projects ──────────────────────────────────────── */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .project-card {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-card);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      display: flex; flex-direction: column;
+      transition: transform .25s, border-color .25s;
+    }
+    .project-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--clr-accent);
+    }
+
+    .project-card h3 { font-size: 1.1rem; color: var(--clr-white); margin-bottom: .5rem; }
+    .project-card p  { font-size: .9rem; color: var(--clr-muted); flex: 1; margin-bottom: 1rem; }
+
+    .project-links { display: flex; gap: .75rem; }
+    .project-links a {
+      font-size: .8rem;
+      padding: .4rem .9rem;
+      border-radius: 999px;
+      border: 1px solid var(--clr-card);
+      color: var(--clr-text);
+      transition: .25s;
+    }
+    .project-links a:hover {
+      background: var(--clr-accent);
+      border-color: var(--clr-accent);
+      color: var(--clr-bg);
+    }
+
+    /* ── Contact ───────────────────────────────────────── */
+    #contact .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .contact-card {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-card);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      text-align: center;
+      transition: border-color .25s, transform .25s;
+    }
+    .contact-card:hover {
+      border-color: var(--clr-accent);
+      transform: translateY(-4px);
+    }
+
+    .contact-card .icon {
+      font-size: 1.6rem;
+      margin-bottom: .5rem;
+    }
+    .contact-card h3 {
+      font-size: .95rem;
+      color: var(--clr-white);
+      margin-bottom: .25rem;
+    }
+    .contact-card p, .contact-card a {
+      font-size: .88rem;
+      color: var(--clr-muted);
+    }
+
+    /* ── Footer ────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 2rem 1.5rem 3rem;
+      color: var(--clr-muted);
+      font-size: .82rem;
+      border-top: 1px solid var(--clr-card);
+      margin-top: 2rem;
+    }
+
+    /* ── Responsive ────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .hamburger { display: flex; }
+
+      nav ul {
+        position: absolute;
+        top: 100%; left: 0; width: 100%;
+        flex-direction: column;
+        background: rgba(15, 23, 42, .97);
+        padding: 1rem 1.5rem;
+        gap: .8rem;
+        display: none;
+        border-bottom: 1px solid var(--clr-card);
+      }
+      nav ul.open { display: flex; }
+
+      #about h1 { font-size: 2rem; }
+      #about .tagline { font-size: 1rem; }
+
+      section { padding: 4rem 1rem 2rem; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ════════════ Navigation ════════════ -->
+  <nav>
+    <div class="nav-inner">
+      <span class="logo">RB</span>
+      <button class="hamburger" aria-label="Menu" onclick="document.querySelector('nav ul').classList.toggle('open')">
+        <span></span><span></span><span></span>
+      </button>
+      <ul>
+        <li><a href="#about">About</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#experience">Experience</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ════════════ About / Hero ════════════ -->
+  <section id="about">
+    <div class="avatar">
+      <!-- 👇 Replace the placeholder below with your photo -->
+      <!-- <img src="your-photo.jpg" alt="Rupesh Bodke" /> -->
+      <span>Your Photo</span>
+    </div>
+
+    <h1>Rupesh Bodke</h1>
+    <p class="tagline">Software Developer · Full-Stack Engineer · Tech Enthusiast</p>
+    <p class="bio">
+      <!-- 👇 PLACEHOLDER: Replace with your own summary / bio -->
+      Passionate software developer with a love for building clean, scalable, and
+      user-friendly applications. Experienced across the full stack—from crafting
+      pixel-perfect UIs to designing robust backend systems. Always eager to learn
+      new technologies and solve challenging problems.
+    </p>
+
+    <div class="social-links">
+      <a href="https://github.com/rupesh-BODKE" target="_blank">&#9679; GitHub</a>
+      <a href="https://linkedin.com/in/YOUR-LINKEDIN" target="_blank">&#9679; LinkedIn</a>
+      <a href="https://twitter.com/YOUR-TWITTER" target="_blank">&#9679; Twitter</a>
+      <a href="#contact">&#9679; Contact Me</a>
+    </div>
+  </section>
+
+  <!-- ════════════ Skills ════════════ -->
+  <section id="skills">
+    <h2 class="section-title">Skills</h2>
+
+    <div class="skills-grid">
+      <div class="skill-category">
+        <h3>Languages</h3>
+        <div class="tags">
+          <!-- 👇 PLACEHOLDER: Replace with your actual skills -->
+          <span class="tag">JavaScript</span>
+          <span class="tag">TypeScript</span>
+          <span class="tag">Python</span>
+          <span class="tag">Java</span>
+          <span class="tag">C++</span>
+          <span class="tag">SQL</span>
+        </div>
+      </div>
+
+      <div class="skill-category">
+        <h3>Frontend</h3>
+        <div class="tags">
+          <span class="tag">React</span>
+          <span class="tag">Next.js</span>
+          <span class="tag">HTML5</span>
+          <span class="tag">CSS3 / SCSS</span>
+          <span class="tag">Tailwind CSS</span>
+        </div>
+      </div>
+
+      <div class="skill-category">
+        <h3>Backend & Databases</h3>
+        <div class="tags">
+          <span class="tag">Node.js</span>
+          <span class="tag">Express</span>
+          <span class="tag">REST APIs</span>
+          <span class="tag">MongoDB</span>
+          <span class="tag">PostgreSQL</span>
+        </div>
+      </div>
+
+      <div class="skill-category">
+        <h3>Tools & DevOps</h3>
+        <div class="tags">
+          <span class="tag">Git / GitHub</span>
+          <span class="tag">Docker</span>
+          <span class="tag">Linux</span>
+          <span class="tag">CI/CD</span>
+          <span class="tag">AWS</span>
+          <span class="tag">VS Code</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ Experience ════════════ -->
+  <section id="experience">
+    <h2 class="section-title">Experience</h2>
+
+    <div class="timeline">
+      <!-- 👇 PLACEHOLDER: Replace with your actual experience -->
+      <div class="timeline-item">
+        <h3>Software Developer — Company Name</h3>
+        <p class="meta">Jan 2024 – Present &nbsp;·&nbsp; City, Country</p>
+        <ul>
+          <li>Designed and developed full-stack features used by 10,000+ users daily.</li>
+          <li>Optimised API response times by 40% through caching and query tuning.</li>
+          <li>Collaborated in agile sprints and conducted thorough code reviews.</li>
+        </ul>
+      </div>
+
+      <div class="timeline-item">
+        <h3>Frontend Intern — Another Company</h3>
+        <p class="meta">Jun 2023 – Dec 2023 &nbsp;·&nbsp; Remote</p>
+        <ul>
+          <li>Built responsive UI components with React and Tailwind CSS.</li>
+          <li>Integrated REST APIs and managed state with Redux Toolkit.</li>
+          <li>Wrote unit tests achieving 90%+ code coverage.</li>
+        </ul>
+      </div>
+
+      <div class="timeline-item">
+        <h3>Bachelor of Engineering — University Name</h3>
+        <p class="meta">2019 – 2023 &nbsp;·&nbsp; City, Country</p>
+        <ul>
+          <li>Graduated with distinction in Computer Science / IT.</li>
+          <li>Relevant coursework: Data Structures, Algorithms, DBMS, OS, Networking.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ Projects ════════════ -->
+  <section id="projects">
+    <h2 class="section-title">Projects</h2>
+
+    <div class="projects-grid">
+      <!-- 👇 PLACEHOLDER: Replace with your actual projects -->
+      <div class="project-card">
+        <h3>🚀 Project One</h3>
+        <p>
+          A brief description of the project—what it does, the problem it solves,
+          and the technologies used (e.g., React, Node.js, MongoDB).
+        </p>
+        <div class="tags" style="margin-bottom: 1rem;">
+          <span class="tag">React</span>
+          <span class="tag">Node.js</span>
+          <span class="tag">MongoDB</span>
+        </div>
+        <div class="project-links">
+          <a href="https://github.com/rupesh-BODKE/project-one" target="_blank">Source Code</a>
+          <a href="#" target="_blank">Live Demo</a>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <h3>📊 Project Two</h3>
+        <p>
+          Another project description. Highlight quantifiable results—e.g.,
+          "Reduced load time by 60%" or "Served 5K+ monthly active users."
+        </p>
+        <div class="tags" style="margin-bottom: 1rem;">
+          <span class="tag">Python</span>
+          <span class="tag">Flask</span>
+          <span class="tag">PostgreSQL</span>
+        </div>
+        <div class="project-links">
+          <a href="https://github.com/rupesh-BODKE/project-two" target="_blank">Source Code</a>
+          <a href="#" target="_blank">Live Demo</a>
+        </div>
+      </div>
+
+      <div class="project-card">
+        <h3>🤖 Project Three</h3>
+        <p>
+          One more project. Mention any awards, recognition, or impact—e.g.,
+          "Won 1st place at XYZ Hackathon."
+        </p>
+        <div class="tags" style="margin-bottom: 1rem;">
+          <span class="tag">TypeScript</span>
+          <span class="tag">Next.js</span>
+          <span class="tag">Tailwind</span>
+        </div>
+        <div class="project-links">
+          <a href="https://github.com/rupesh-BODKE/project-three" target="_blank">Source Code</a>
+          <a href="#" target="_blank">Live Demo</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ Contact ════════════ -->
+  <section id="contact">
+    <h2 class="section-title">Contact</h2>
+    <p style="color: var(--clr-muted); margin-bottom: 1rem;">
+      I'm always open to new opportunities and collaborations. Feel free to reach out!
+    </p>
+
+    <div class="contact-grid">
+      <div class="contact-card">
+        <div class="icon">✉️</div>
+        <h3>Email</h3>
+        <!-- 👇 PLACEHOLDER: Replace with your email -->
+        <a href="mailto:your.email@example.com">your.email@example.com</a>
+      </div>
+
+      <div class="contact-card">
+        <div class="icon">💼</div>
+        <h3>LinkedIn</h3>
+        <!-- 👇 PLACEHOLDER: Replace with your LinkedIn -->
+        <a href="https://linkedin.com/in/YOUR-LINKEDIN" target="_blank">linkedin.com/in/YOUR-LINKEDIN</a>
+      </div>
+
+      <div class="contact-card">
+        <div class="icon">🐙</div>
+        <h3>GitHub</h3>
+        <a href="https://github.com/rupesh-BODKE" target="_blank">github.com/rupesh-BODKE</a>
+      </div>
+
+      <div class="contact-card">
+        <div class="icon">📍</div>
+        <h3>Location</h3>
+        <!-- 👇 PLACEHOLDER: Replace with your location -->
+        <p>Your City, Country</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════ Footer ════════════ -->
+  <footer>
+    <p>&copy; 2026 Rupesh Bodke. Built with ☕ and clean code.</p>
+  </footer>
+
+  <!-- ════════════ Mobile Menu Script ════════════ -->
+  <script>
+    // Close mobile menu when a link is clicked
+    document.querySelectorAll('nav ul a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.querySelector('nav ul').classList.remove('open');
+      });
+    });
+  </script>
+
+</body>
+</html>
