@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinanceTracker — Personal Finance App</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     AUTH SCREEN
+════════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">💰 FinanceTracker</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">Sign In</button>
+      <button class="auth-tab" data-tab="register">Register</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="login-form" class="auth-form">
+      <div class="form-group">
+        <label for="login-username">Username</label>
+        <input type="text" id="login-username" placeholder="Enter username" required autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="Enter password" required autocomplete="current-password" />
+      </div>
+      <div id="login-error" class="form-error hidden"></div>
+      <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+      <p class="auth-demo-note">Demo account — username: <strong>demo</strong> / password: <strong>demo123</strong></p>
+    </form>
+
+    <!-- Register Form -->
+    <form id="register-form" class="auth-form hidden">
+      <div class="form-group">
+        <label for="reg-name">Full Name</label>
+        <input type="text" id="reg-name" placeholder="Your full name" required />
+      </div>
+      <div class="form-group">
+        <label for="reg-username">Username</label>
+        <input type="text" id="reg-username" placeholder="Choose a username" required autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" placeholder="you@example.com" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="reg-password">Password</label>
+        <input type="password" id="reg-password" placeholder="Min. 8 characters" required autocomplete="new-password" />
+      </div>
+      <div class="form-group">
+        <label for="reg-confirm">Confirm Password</label>
+        <input type="password" id="reg-confirm" placeholder="Repeat password" required autocomplete="new-password" />
+      </div>
+      <div id="reg-error" class="form-error hidden"></div>
+      <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════ -->
+<div id="app" class="hidden">
+
+  <!-- Sidebar overlay (mobile) -->
+  <div id="sidebar-overlay"></div>
+
+  <!-- ── Sidebar ── -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-logo">💰</span>
+      <span class="sidebar-title">FinanceTracker</span>
+      <button id="sidebar-close" class="sidebar-close" aria-label="Close menu">✕</button>
+    </div>
+    <nav class="sidebar-nav" aria-label="Main navigation">
+      <a href="#" class="nav-item active" data-view="dashboard">
+        <span class="nav-icon" aria-hidden="true">📊</span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-view="transactions">
+        <span class="nav-icon" aria-hidden="true">💳</span>
+        <span class="nav-label">Transactions</span>
+      </a>
+      <a href="#" class="nav-item" data-view="budget">
+        <span class="nav-icon" aria-hidden="true">🎯</span>
+        <span class="nav-label">Budget</span>
+      </a>
+      <a href="#" class="nav-item" data-view="bills">
+        <span class="nav-icon" aria-hidden="true">🔔</span>
+        <span class="nav-label">Bills</span>
+        <span class="nav-badge hidden" id="bills-badge" aria-label="overdue bills">0</span>
+      </a>
+      <a href="#" class="nav-item" data-view="reports">
+        <span class="nav-icon" aria-hidden="true">📈</span>
+        <span class="nav-label">Reports</span>
+      </a>
+      <a href="#" class="nav-item" data-view="settings">
+        <span class="nav-icon" aria-hidden="true">⚙️</span>
+        <span class="nav-label">Settings</span>
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar" aria-hidden="true">U</div>
+        <div class="user-details">
+          <div class="user-name" id="user-name">User</div>
+          <div class="user-email" id="user-email">user@example.com</div>
+        </div>
+      </div>
+      <button id="logout-btn" class="btn-logout" title="Sign out" aria-label="Sign out">⏻</button>
+    </div>
+  </aside>
+
+  <!-- ── Mobile Header ── -->
+  <header id="mobile-header">
+    <button id="menu-toggle" aria-label="Open menu">☰</button>
+    <span class="mobile-title">FinanceTracker</span>
+    <div style="width:40px"></div>
+  </header>
+
+  <!-- ── Main Content ── -->
+  <main id="main-content">
+
+    <!-- ══════════ DASHBOARD ══════════ -->
+    <div id="view-dashboard" class="view">
+      <div class="view-header">
+        <h1>Dashboard</h1>
+        <div class="view-actions">
+          <button class="btn btn-primary" id="quick-add-btn">+ Add Transaction</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card income">
+          <div class="stat-icon" aria-hidden="true">💚</div>
+          <div class="stat-info">
+            <div class="stat-label">Monthly Income</div>
+            <div class="stat-value" id="dash-income">$0.00</div>
+          </div>
+        </div>
+        <div class="stat-card expense">
+          <div class="stat-icon" aria-hidden="true">🔴</div>
+          <div class="stat-info">
+            <div class="stat-label">Monthly Expenses</div>
+            <div class="stat-value" id="dash-expense">$0.00</div>
+          </div>
+        </div>
+        <div class="stat-card balance">
+          <div class="stat-icon" aria-hidden="true">💰</div>
+          <div class="stat-info">
+            <div class="stat-label">Net Balance</div>
+            <div class="stat-value" id="dash-balance">$0.00</div>
+          </div>
+        </div>
+        <div class="stat-card savings">
+          <div class="stat-icon" aria-hidden="true">📈</div>
+          <div class="stat-info">
+            <div class="stat-label">Savings Rate</div>
+            <div class="stat-value" id="dash-savings">0%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="card chart-card">
+          <h3 class="card-title">Expenses by Category</h3>
+          <div class="chart-container"><canvas id="chart-category"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <h3 class="card-title">Monthly Cash Flow</h3>
+          <div class="chart-container"><canvas id="chart-cashflow"></canvas></div>
+        </div>
+      </div>
+
+      <div class="dashboard-bottom">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Recent Transactions</h3>
+            <a href="#" class="link-sm" data-view="transactions">View All</a>
+          </div>
+          <div id="recent-transactions"><p class="empty-state">No transactions yet</p></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Upcoming Bills</h3>
+            <a href="#" class="link-sm" data-view="bills">View All</a>
+          </div>
+          <div id="upcoming-bills"><p class="empty-state">No upcoming bills</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ TRANSACTIONS ══════════ -->
+    <div id="view-transactions" class="view hidden">
+      <div class="view-header">
+        <h1>Transactions</h1>
+        <div class="view-actions">
+          <button class="btn btn-outline" id="export-csv-btn">⬇ Export CSV</button>
+          <button class="btn btn-primary" id="add-transaction-btn">+ Add Transaction</button>
+        </div>
+      </div>
+
+      <div class="card filters-card">
+        <div class="filters-row">
+          <input type="text" id="txn-search" placeholder="🔍 Search transactions…" class="filter-input" />
+          <select id="txn-type-filter" class="filter-select">
+            <option value="">All Types</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+          <select id="txn-cat-filter" class="filter-select">
+            <option value="">All Categories</option>
+          </select>
+          <input type="month" id="txn-month-filter" class="filter-input" style="min-width:160px" />
+          <button class="btn btn-outline btn-sm" id="clear-filters-btn">Clear</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="transactions-table-body">
+              <tr><td colspan="6" class="empty-state">No transactions found</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="txn-pagination"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ BUDGET ══════════ -->
+    <div id="view-budget" class="view hidden">
+      <div class="view-header">
+        <h1>Monthly Budget</h1>
+        <div class="view-actions">
+          <input type="month" id="budget-month" class="filter-input" style="min-width:160px" />
+          <button class="btn btn-primary" id="add-budget-btn">+ Set Budget</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" aria-hidden="true">🎯</div>
+          <div class="stat-info">
+            <div class="stat-label">Total Budget</div>
+            <div class="stat-value" id="budget-total">$0.00</div>
+          </div>
+        </div>
+        <div class="stat-card expense">
+          <div class="stat-icon" aria-hidden="true">💸</div>
+          <div class="stat-info">
+            <div class="stat-label">Total Spent</div>
+            <div class="stat-value" id="budget-spent">$0.00</div>
+          </div>
+        </div>
+        <div class="stat-card income">
+          <div class="stat-icon" aria-hidden="true">✅</div>
+          <div class="stat-info">
+            <div class="stat-label">Remaining</div>
+            <div class="stat-value" id="budget-remaining">$0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="budget-list">
+          <p class="empty-state">No budgets set for this month. Click "+ Set Budget" to get started.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ BILLS ══════════ -->
+    <div id="view-bills" class="view hidden">
+      <div class="view-header">
+        <h1>Bills &amp; Reminders</h1>
+        <div class="view-actions">
+          <button class="btn btn-primary" id="add-bill-btn">+ Add Bill</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card overdue">
+          <div class="stat-icon" aria-hidden="true">⚠️</div>
+          <div class="stat-info">
+            <div class="stat-label">Overdue Bills</div>
+            <div class="stat-value" id="bills-overdue-count">0</div>
+          </div>
+        </div>
+        <div class="stat-card upcoming">
+          <div class="stat-icon" aria-hidden="true">📅</div>
+          <div class="stat-info">
+            <div class="stat-label">Due This Week</div>
+            <div class="stat-value" id="bills-upcoming-count">0</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" aria-hidden="true">💰</div>
+          <div class="stat-info">
+            <div class="stat-label">Amount Due</div>
+            <div class="stat-value" id="bills-amount-due">$0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="bills-tabs">
+          <button class="bills-tab active" data-status="upcoming">Upcoming</button>
+          <button class="bills-tab" data-status="paid">Paid</button>
+          <button class="bills-tab" data-status="all">All Bills</button>
+        </div>
+        <div id="bills-list"><p class="empty-state">No bills added yet</p></div>
+      </div>
+    </div>
+
+    <!-- ══════════ REPORTS ══════════ -->
+    <div id="view-reports" class="view hidden">
+      <div class="view-header">
+        <h1>Reports &amp; Analytics</h1>
+        <div class="view-actions">
+          <select id="report-period" class="filter-select">
+            <option value="this-month">This Month</option>
+            <option value="last-month">Last Month</option>
+            <option value="last-3">Last 3 Months</option>
+            <option value="last-6">Last 6 Months</option>
+            <option value="this-year">This Year</option>
+          </select>
+          <button class="btn btn-outline" id="export-pdf-btn">🖨 Print / PDF</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card income">
+          <div class="stat-icon" aria-hidden="true">💚</div>
+          <div class="stat-info">
+            <div class="stat-label">Total Income</div>
+            <div class="stat-value" id="report-income">$0.00</div>
+          </div>
+        </div>
+        <div class="stat-card expense">
+          <div class="stat-icon" aria-hidden="true">🔴</div>
+          <div class="stat-info">
+            <div class="stat-label">Total Expenses</div>
+            <div class="stat-value" id="report-expense">$0.00</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" aria-hidden="true">📊</div>
+          <div class="stat-info">
+            <div class="stat-label">Avg Monthly Spend</div>
+            <div class="stat-value" id="report-avg">$0.00</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" aria-hidden="true">🏆</div>
+          <div class="stat-info">
+            <div class="stat-label">Top Category</div>
+            <div class="stat-value" id="report-biggest">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="card chart-card">
+          <h3 class="card-title">Expense Breakdown</h3>
+          <div class="chart-container"><canvas id="report-chart-category"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <h3 class="card-title">Income vs Expenses</h3>
+          <div class="chart-container"><canvas id="report-chart-monthly"></canvas></div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="card chart-card">
+          <h3 class="card-title">Spending Trend</h3>
+          <div class="chart-container"><canvas id="report-chart-trend"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <h3 class="card-title">Budget vs Actual</h3>
+          <div class="chart-container"><canvas id="report-chart-budget"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom:1rem">Top Spending Categories</h3>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>% of Total</th>
+                <th>Transactions</th>
+              </tr>
+            </thead>
+            <tbody id="report-categories-table">
+              <tr><td colspan="4" class="empty-state">No data for this period</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ SETTINGS ══════════ -->
+    <div id="view-settings" class="view hidden">
+      <div class="view-header">
+        <h1>Settings</h1>
+      </div>
+
+      <div class="settings-grid">
+        <!-- Profile -->
+        <div class="card settings-card">
+          <h3 class="card-title">👤 Profile</h3>
+          <form id="profile-form">
+            <div class="form-group">
+              <label for="setting-name">Full Name</label>
+              <input type="text" id="setting-name" autocomplete="name" />
+            </div>
+            <div class="form-group">
+              <label for="setting-email">Email</label>
+              <input type="email" id="setting-email" autocomplete="email" />
+            </div>
+            <div id="profile-msg" class="form-error hidden"></div>
+            <button type="submit" class="btn btn-primary">Save Profile</button>
+          </form>
+        </div>
+
+        <!-- Password -->
+        <div class="card settings-card">
+          <h3 class="card-title">🔒 Change Password</h3>
+          <form id="password-form">
+            <div class="form-group">
+              <label for="setting-curr-pwd">Current Password</label>
+              <input type="password" id="setting-curr-pwd" autocomplete="current-password" />
+            </div>
+            <div class="form-group">
+              <label for="setting-new-pwd">New Password</label>
+              <input type="password" id="setting-new-pwd" autocomplete="new-password" />
+            </div>
+            <div class="form-group">
+              <label for="setting-confirm-pwd">Confirm New Password</label>
+              <input type="password" id="setting-confirm-pwd" autocomplete="new-password" />
+            </div>
+            <div id="pwd-error" class="form-error hidden"></div>
+            <button type="submit" class="btn btn-primary">Update Password</button>
+          </form>
+        </div>
+
+        <!-- Currency -->
+        <div class="card settings-card">
+          <h3 class="card-title">💱 Default Currency</h3>
+          <div class="form-group">
+            <label for="setting-currency">Display Currency</label>
+            <select id="setting-currency" style="width:100%"><!-- populated by JS --></select>
+          </div>
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">
+            All amounts are converted to this currency when displayed.
+            Original currency is preserved per transaction.
+          </p>
+          <button class="btn btn-primary" id="save-currency-btn">Save Currency</button>
+        </div>
+
+        <!-- Exchange Rates -->
+        <div class="card settings-card">
+          <h3 class="card-title">📊 Exchange Rates (to USD)</h3>
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">
+            Edit the rate for each currency relative to 1 USD.
+          </p>
+          <div id="exchange-rates-list"><!-- populated by JS --></div>
+          <div style="display:flex;gap:.5rem;margin-top:.75rem">
+            <button class="btn btn-outline btn-sm" id="save-rates-btn">Save Rates</button>
+            <button class="btn btn-outline btn-sm" id="reset-rates-btn">Reset Defaults</button>
+          </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="card settings-card">
+          <h3 class="card-title">🗄 Data Management</h3>
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">
+            Export or import your full dataset as JSON. Data is stored in your browser's localStorage.
+          </p>
+          <div class="settings-actions">
+            <button class="btn btn-outline" id="export-data-btn">⬇ Export All Data (JSON)</button>
+            <button class="btn btn-outline" id="import-data-btn">⬆ Import Data (JSON)</button>
+            <input type="file" id="import-file" accept=".json" class="hidden" />
+            <button class="btn btn-danger" id="clear-data-btn">🗑 Clear All My Data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ════════════════════════════════════════
+     MODALS
+════════════════════════════════════════ -->
+
+<!-- Transaction Modal -->
+<div class="modal-overlay hidden" id="modal-transaction" role="dialog" aria-modal="true" aria-labelledby="txn-modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="txn-modal-title">Add Transaction</h3>
+      <button class="modal-close" data-modal="modal-transaction" aria-label="Close">✕</button>
+    </div>
+    <form id="transaction-form">
+      <div class="modal-body">
+        <input type="hidden" id="txn-id" />
+        <div class="form-row">
+          <div class="form-group">
+            <label for="txn-type">Type</label>
+            <select id="txn-type" required>
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="txn-date">Date</label>
+            <input type="date" id="txn-date" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="txn-desc">Description</label>
+          <input type="text" id="txn-desc" placeholder="What was this for?" required maxlength="120" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="txn-amount">Amount</label>
+            <input type="number" id="txn-amount" placeholder="0.00" min="0.01" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label for="txn-currency">Currency</label>
+            <select id="txn-currency"><!-- populated by JS --></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="txn-category">Category</label>
+          <select id="txn-category" required><!-- populated by JS --></select>
+        </div>
+        <div class="form-group">
+          <label for="txn-notes">Notes (optional)</label>
+          <textarea id="txn-notes" rows="2" placeholder="Additional notes…" maxlength="300"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal="modal-transaction">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Transaction</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Budget Modal -->
+<div class="modal-overlay hidden" id="modal-budget" role="dialog" aria-modal="true" aria-labelledby="budget-modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="budget-modal-title">Set Budget</h3>
+      <button class="modal-close" data-modal="modal-budget" aria-label="Close">✕</button>
+    </div>
+    <form id="budget-form">
+      <div class="modal-body">
+        <input type="hidden" id="budget-id" />
+        <div class="form-group">
+          <label for="budget-category">Category</label>
+          <select id="budget-category" required><!-- populated by JS --></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="budget-amount">Budget Amount</label>
+            <input type="number" id="budget-amount" placeholder="0.00" min="1" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label for="budget-month-input">Month</label>
+            <input type="month" id="budget-month-input" required />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal="modal-budget">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Budget</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Bill Modal -->
+<div class="modal-overlay hidden" id="modal-bill" role="dialog" aria-modal="true" aria-labelledby="bill-modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="bill-modal-title">Add Bill</h3>
+      <button class="modal-close" data-modal="modal-bill" aria-label="Close">✕</button>
+    </div>
+    <form id="bill-form">
+      <div class="modal-body">
+        <input type="hidden" id="bill-id" />
+        <div class="form-group">
+          <label for="bill-name">Bill Name</label>
+          <input type="text" id="bill-name" placeholder="e.g. Netflix, Electricity" required maxlength="80" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="bill-amount">Amount</label>
+            <input type="number" id="bill-amount" placeholder="0.00" min="0.01" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label for="bill-currency">Currency</label>
+            <select id="bill-currency"><!-- populated by JS --></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="bill-due-date">Due Date</label>
+            <input type="date" id="bill-due-date" required />
+          </div>
+          <div class="form-group">
+            <label for="bill-category">Category</label>
+            <select id="bill-category"><!-- populated by JS --></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="bill-recurring">Recurring</label>
+            <select id="bill-recurring">
+              <option value="none">One-time</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bill-notes">Notes</label>
+            <input type="text" id="bill-notes" placeholder="Optional notes" maxlength="120" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal="modal-bill">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Bill</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm Dialog -->
+<div class="modal-overlay hidden" id="modal-confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="confirm-title">Confirm</h3>
+    </div>
+    <p id="confirm-message" style="padding:1.25rem 1.5rem 0;color:var(--muted)">Are you sure?</p>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="confirm-cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+<!-- Chart.js (pinned version for stability) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
