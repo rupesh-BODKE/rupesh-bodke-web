@@ -253,7 +253,7 @@
       amount:      amount,
       type:        typeSelect.value,
       category:    categorySelect.value,
-      date:        new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      date:        new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     });
 
     save();
