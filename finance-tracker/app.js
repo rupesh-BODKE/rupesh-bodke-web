@@ -82,13 +82,33 @@ function escapeHtml(str) {
 // ================================================================
 
 const Crypto = {
-  /** SHA-256 hash a password using the Web Crypto API */
-  async hashPassword(password) {
-    const encoded = new TextEncoder().encode(password);
-    const hashBuf = await crypto.subtle.digest('SHA-256', encoded);
-    return Array.from(new Uint8Array(hashBuf))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+  /**
+   * Generate a random 128-bit hex salt (16 bytes).
+   * A unique salt is stored per user to prevent rainbow-table attacks.
+   */
+  generateSalt() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  /**
+   * Derive a key from the password using PBKDF2-SHA-256 (100 000 iterations).
+   * This is deliberately slow to resist brute-force attacks, even when the
+   * hashed value is obtained from localStorage.
+   * @param {string} password  Plaintext password
+   * @param {string} salt      Hex salt stored with the user record
+   */
+  async hashPassword(password, salt) {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw', enc.encode(password), { name: 'PBKDF2' }, false, ['deriveBits'],
+    );
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100_000, hash: 'SHA-256' },
+      keyMaterial, 256,
+    );
+    return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
   },
 
   /** Generate a collision-resistant random ID */
@@ -98,8 +118,12 @@ const Crypto = {
 
   /**
    * Create a lightweight client-side session token.
-   * Encodes userId + expiry; not cryptographically signed (fine for
-   * a client-only app where data never leaves the browser).
+   *
+   * SECURITY NOTE: This token is stored in localStorage alongside all other
+   * app data, so an attacker with access to localStorage can already read all
+   * data directly.  The token is intentionally kept simple — its only purpose
+   * is to persist the login session across page reloads within the same
+   * browser origin.  Do NOT use this design in a networked/server context.
    */
   createToken(userId) {
     const payload = { userId, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 };
@@ -250,8 +274,16 @@ const App = {
 
 const Auth = {
   async init() {
-    // Ensure demo account exists
-    if (!Storage.getUserByUsername('demo')) await this._createDemoUser();
+    // Ensure demo account exists with PBKDF2-hashed password
+    const existing = Storage.getUserByUsername('demo');
+    if (!existing || !existing.passwordSalt) {
+      // Create (or recreate) demo user with proper PBKDF2 password hashing
+      if (existing) {
+        const users = Storage.getUsers().filter(u => u.username !== 'demo');
+        Storage.saveUsers(users);
+      }
+      await this._createDemoUser();
+    }
 
     const token = localStorage.getItem(TOKEN_KEY);
     if (token && Crypto.isTokenValid(token)) {
@@ -269,10 +301,11 @@ const Auth = {
   },
 
   async _createDemoUser() {
-    const hash = await Crypto.hashPassword('demo123');
+    const salt = Crypto.generateSalt();
+    const hash = await Crypto.hashPassword('demo123', salt);
     const user = {
       id: Crypto.generateId(), name: 'Demo User', username: 'demo',
-      email: 'demo@financetracker.app', passwordHash: hash,
+      email: 'demo@financetracker.app', passwordHash: hash, passwordSalt: salt,
       createdAt: new Date().toISOString(),
     };
     Storage.saveUser(user);
@@ -362,7 +395,9 @@ const Auth = {
   async login(username, password) {
     const user = Storage.getUserByUsername(username);
     if (!user) throw new Error('Invalid username or password');
-    const hash = await Crypto.hashPassword(password);
+    // All users created since v2 have a passwordSalt for PBKDF2
+    if (!user.passwordSalt) throw new Error('Account requires re-registration — please sign up again');
+    const hash = await Crypto.hashPassword(password, user.passwordSalt);
     if (hash !== user.passwordHash) throw new Error('Invalid username or password');
     localStorage.setItem(TOKEN_KEY, Crypto.createToken(user.id));
     App.user     = user;
@@ -371,9 +406,11 @@ const Auth = {
 
   async register(name, username, email, password) {
     if (Storage.getUserByUsername(username)) throw new Error('Username already taken');
+    const salt = Crypto.generateSalt();
     const user = {
       id: Crypto.generateId(), name, username, email,
-      passwordHash: await Crypto.hashPassword(password),
+      passwordHash: await Crypto.hashPassword(password, salt),
+      passwordSalt: salt,
       createdAt: new Date().toISOString(),
     };
     Storage.saveUser(user);
@@ -472,7 +509,7 @@ const UI = {
     const sel = document.getElementById(selectId);
     if (!sel) return;
     sel.innerHTML = CURRENCIES.map(c =>
-      `<option value="${c.code}" ${c.code === selectedCode ? 'selected' : ''}>${c.code} — ${escapeHtml(c.name)}</option>`
+      `<option value="${escapeHtml(c.code)}" ${c.code === selectedCode ? 'selected' : ''}>${escapeHtml(c.code)} — ${escapeHtml(c.name)}</option>`
     ).join('');
   },
 
@@ -700,8 +737,8 @@ const Transactions = {
               ${sign}${App.formatCurrency(t.amountDefault)}${originalNote}
             </td>
             <td>
-              <button class="btn-icon" onclick="Transactions.openEdit('${escapeHtml(t.id)}')" title="Edit">✏️</button>
-              <button class="btn-icon danger" onclick="Transactions.confirmDelete('${escapeHtml(t.id)}')" title="Delete">🗑️</button>
+              <button class="btn-icon" data-action="edit-txn" data-id="${escapeHtml(t.id)}" title="Edit">✏️</button>
+              <button class="btn-icon danger" data-action="del-txn" data-id="${escapeHtml(t.id)}" title="Delete">🗑️</button>
             </td>
           </tr>`;
       }).join('');
@@ -712,15 +749,15 @@ const Transactions = {
   _renderPagination(pages) {
     const el = document.getElementById('txn-pagination');
     if (pages <= 1) { el.innerHTML = ''; return; }
-    let html = `<button class="page-btn" onclick="Transactions.goPage(${App.txnPage - 1})" ${App.txnPage === 1 ? 'disabled' : ''}>‹</button>`;
+    let html = `<button class="page-btn" data-page="${App.txnPage - 1}" ${App.txnPage === 1 ? 'disabled' : ''}>‹</button>`;
     for (let i = 1; i <= pages; i++) {
       if (pages > 7 && Math.abs(i - App.txnPage) > 2 && i !== 1 && i !== pages) {
         if (i === 2 || i === pages - 1) html += '<span style="color:var(--muted);padding:.4rem .2rem">…</span>';
         continue;
       }
-      html += `<button class="page-btn ${i === App.txnPage ? 'active' : ''}" onclick="Transactions.goPage(${i})">${i}</button>`;
+      html += `<button class="page-btn ${i === App.txnPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
     }
-    html += `<button class="page-btn" onclick="Transactions.goPage(${App.txnPage + 1})" ${App.txnPage === pages ? 'disabled' : ''}>›</button>`;
+    html += `<button class="page-btn" data-page="${App.txnPage + 1}" ${App.txnPage === pages ? 'disabled' : ''}>›</button>`;
     el.innerHTML = html;
   },
 
@@ -866,8 +903,8 @@ const Budget = {
               <span>/</span>
               <span>${App.formatCurrency(b.amount)}</span>
               <span style="color:${fillCls === 'over' ? 'var(--danger)' : fillCls === 'warn' ? 'var(--warning)' : 'var(--muted)'}">${pctRaw.toFixed(0)}%</span>
-              <button class="btn-icon" onclick="Budget.openEdit('${escapeHtml(b.id)}')" title="Edit">✏️</button>
-              <button class="btn-icon danger" onclick="Budget.confirmDelete('${escapeHtml(b.id)}')" title="Delete">🗑️</button>
+              <button class="btn-icon" data-action="edit-budget" data-id="${escapeHtml(b.id)}" title="Edit">✏️</button>
+              <button class="btn-icon danger" data-action="del-budget" data-id="${escapeHtml(b.id)}" title="Delete">🗑️</button>
             </div>
           </div>
           <div class="progress-bar">
@@ -983,9 +1020,9 @@ const Bills = {
           </div>
           <div class="bill-amount">${App.formatCurrency(App.convertToDefault(b.amount, b.currency))}</div>
           <div class="bill-actions">
-            ${!b.paid ? `<button class="btn-icon" onclick="Bills.markPaid('${escapeHtml(b.id)}')" title="Mark as paid">✔️</button>` : ''}
-            <button class="btn-icon" onclick="Bills.openEdit('${escapeHtml(b.id)}')" title="Edit">✏️</button>
-            <button class="btn-icon danger" onclick="Bills.confirmDelete('${escapeHtml(b.id)}')" title="Delete">🗑️</button>
+            ${!b.paid ? `<button class="btn-icon" data-action="pay-bill" data-id="${escapeHtml(b.id)}" title="Mark as paid">✔️</button>` : ''}
+            <button class="btn-icon" data-action="edit-bill" data-id="${escapeHtml(b.id)}" title="Edit">✏️</button>
+            <button class="btn-icon danger" data-action="del-bill" data-id="${escapeHtml(b.id)}" title="Delete">🗑️</button>
           </div>
         </div>`;
     }).join('');
@@ -1341,7 +1378,7 @@ const SettingsView = {
     const confPwd  = document.getElementById('setting-confirm-pwd').value;
 
     errEl.classList.add('hidden');
-    const currHash = await Crypto.hashPassword(currPwd);
+    const currHash = await Crypto.hashPassword(currPwd, App.user.passwordSalt);
     if (currHash !== App.user.passwordHash) {
       errEl.textContent = 'Current password is incorrect'; errEl.classList.remove('hidden'); return;
     }
@@ -1351,7 +1388,9 @@ const SettingsView = {
     if (newPwd !== confPwd) {
       errEl.textContent = 'Passwords do not match'; errEl.classList.remove('hidden'); return;
     }
-    App.user.passwordHash = await Crypto.hashPassword(newPwd);
+    const newSalt             = Crypto.generateSalt();
+    App.user.passwordHash     = await Crypto.hashPassword(newPwd, newSalt);
+    App.user.passwordSalt     = newSalt;
     Storage.saveUser(App.user);
     document.getElementById('password-form').reset();
     UI.showToast('Password updated', 'success');
@@ -1641,7 +1680,41 @@ function wireEvents() {
     SettingsView.importData(e.target.files[0]);
     e.target.value = '';
   });
-  document.getElementById('clear-data-btn').addEventListener('click', () => SettingsView.clearAllData());
+  // ── Event delegation for dynamically rendered list actions ──────
+  // Transactions table: edit / delete rows
+  document.getElementById('transactions-table-body').addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.action === 'edit-txn') Transactions.openEdit(id);
+    if (btn.dataset.action === 'del-txn')  Transactions.confirmDelete(id);
+  });
+
+  // Transactions pagination
+  document.getElementById('txn-pagination').addEventListener('click', e => {
+    const btn = e.target.closest('[data-page]');
+    if (!btn || btn.disabled) return;
+    Transactions.goPage(Number(btn.dataset.page));
+  });
+
+  // Budget list: edit / delete items
+  document.getElementById('budget-list').addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.action === 'edit-budget') Budget.openEdit(id);
+    if (btn.dataset.action === 'del-budget')  Budget.confirmDelete(id);
+  });
+
+  // Bills list: pay / edit / delete items
+  document.getElementById('bills-list').addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.action === 'pay-bill')  Bills.markPaid(id);
+    if (btn.dataset.action === 'edit-bill') Bills.openEdit(id);
+    if (btn.dataset.action === 'del-bill')  Bills.confirmDelete(id);
+  });
 }
 
 // ── Kick-off ─────────────────────────────────────────────────────
@@ -1649,8 +1722,3 @@ document.addEventListener('DOMContentLoaded', () => {
   wireEvents();
   init();
 });
-
-// Expose objects used in inline onclick attributes on dynamically rendered HTML
-window.Transactions = Transactions;
-window.Bills        = Bills;
-window.Budget       = Budget;
